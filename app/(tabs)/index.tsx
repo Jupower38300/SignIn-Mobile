@@ -10,9 +10,11 @@ import {
   Modal,
   ScrollView,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import axios from 'axios';
+import Signature from 'react-native-signature-canvas';
 
 const API_BASE_URL = 'http://10.26.128.124:8000/api';
 
@@ -34,6 +36,8 @@ const QRScanner = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -65,7 +69,7 @@ const QRScanner = () => {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim(),
-        signature: formData.signature.trim(),
+        signature: formData.signature,
         sessionToken: data,
       };
 
@@ -104,17 +108,13 @@ const QRScanner = () => {
 
   const resetAll = () => {
     setFormData({ firstName: '', lastName: '', email: '', signature: '' });
+    setSignature(null);
     setSessionToken(null);
   };
 
   const startScan = () => {
     const { firstName, lastName, email, signature } = formData;
-    if (
-      !firstName.trim() ||
-      !lastName.trim() ||
-      !email.trim() ||
-      !signature.trim()
-    ) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !signature) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs avant le scan.');
       return;
     }
@@ -169,13 +169,24 @@ const QRScanner = () => {
           value={formData.email}
           onChangeText={(t) => setFormData({ ...formData, email: t })}
         />
-        <TextInput
-          style={[styles.input, styles.signatureInput]}
-          placeholder="Signature"
-          multiline
-          value={formData.signature}
-          onChangeText={(t) => setFormData({ ...formData, signature: t })}
-        />
+
+        <View style={styles.signatureBox}>
+          <Text style={styles.label}>Signature :</Text>
+          {signature ? (
+            <Image
+              source={{ uri: signature }}
+              style={styles.signaturePreview}
+              resizeMode="contain"
+            />
+          ) : (
+            <Text style={{ color: '#888' }}>Aucune signature</Text>
+          )}
+          <Button
+            title="Signer"
+            onPress={() => setShowSignaturePad(true)}
+            color="#4285F4"
+          />
+        </View>
 
         <View style={styles.buttonContainer}>
           <Button
@@ -185,6 +196,7 @@ const QRScanner = () => {
           />
         </View>
 
+        {/* MODAL SCANNER */}
         <Modal visible={showScanner} animationType="slide">
           <SafeAreaView style={styles.scannerContainer}>
             <CameraView
@@ -201,6 +213,37 @@ const QRScanner = () => {
                 title="Annuler"
                 onPress={() => setShowScanner(false)}
                 color="#f44336"
+              />
+            </View>
+          </SafeAreaView>
+        </Modal>
+
+        {/* MODAL SIGNATURE */}
+        <Modal visible={showSignaturePad} animationType="slide">
+          <SafeAreaView style={{ flex: 1 }}>
+            <Signature
+              onOK={(sig) => {
+                setSignature(sig);
+                setFormData({ ...formData, signature: sig });
+                setShowSignaturePad(false);
+              }}
+              onEmpty={() => Alert.alert('Erreur', 'Signature vide')}
+              onClear={() => console.log('Effacé')}
+              descriptionText="Signez ici"
+              clearText="Effacer"
+              confirmText="Valider"
+              webStyle={`
+      .m-signature-pad--footer {
+        display: flex;
+        justify-content: space-between;
+      }
+    `}
+            />
+            <View style={{ padding: 10 }}>
+              <Button
+                title="Annuler"
+                color="#f44336"
+                onPress={() => setShowSignaturePad(false)}
               />
             </View>
           </SafeAreaView>
@@ -239,10 +282,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     elevation: 2,
   },
-  signatureInput: {
-    height: 120,
-    textAlignVertical: 'top',
-  },
   buttonContainer: {
     marginVertical: 12,
     width: '100%',
@@ -279,15 +318,26 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
   },
-  tokenInfo: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: '#e3f2fd',
-    borderRadius: 8,
+  signatureBox: {
+    width: '100%',
+    marginBottom: 15,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#d1d8e0',
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    elevation: 2,
   },
-  tokenText: {
-    fontSize: 14,
-    color: '#1565c0',
+  signaturePreview: {
+    height: 120,
+    width: '100%',
+    marginVertical: 10,
+    backgroundColor: '#f0f0f0',
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 5,
+    color: '#2c3e50',
   },
 });
 
