@@ -245,7 +245,7 @@ const QRScanner = () => {
                 color="#f44336"
                 onPress={() => setShowSignaturePad(false)}
               />
-            </View>
+            </View>kf
           </SafeAreaView>
         </Modal>
       </ScrollView>
